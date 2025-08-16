@@ -1,0 +1,366 @@
+SQL- PROJECT- Employee Management System Database
+
+Tables:
+	 	Employees:
+●	EmployeeID (Primary Key)
+●	FirstName
+●	LastName
+●	DepartmentID (Foreign Key referencing Departments)
+●	HireDate  	Departments:
+●	DepartmentID (Primary Key)
+●	DepartmentName  	Projects:
+●	ProjectID (Primary Key)
+●	ProjectName
+●	DepartmentID (Foreign Key referencing Departments)
+●	StartDate
+●	EndDate
+	 	EmployeeProjects (Junction Table for Many-to-Many Relationship):
+●	EmployeeID (Foreign Key referencing Employees)
+●	ProjectID (Foreign Key referencing Projects)
+
+1)	Create the above tables in your SQL database.
+-- Create Departments Table
+CREATE TABLE Departments (
+    DepartmentID INT PRIMARY KEY,
+    DepartmentName VARCHAR(100) NOT NULL
+);
+
+-- Create Employees Table
+CREATE TABLE Employees (
+    EmployeeID INT PRIMARY KEY,
+    FirstName VARCHAR(50) NOT NULL,
+    LastName VARCHAR(50) NOT NULL,
+    DepartmentID INT,
+    HireDate DATE,
+    FOREIGN KEY (DepartmentID) REFERENCES Departments(DepartmentID)
+);
+
+-- Create Projects Table
+CREATE TABLE Projects (
+    ProjectID INT PRIMARY KEY,
+    ProjectName VARCHAR(100) NOT NULL,
+    DepartmentID INT,
+    StartDate DATE,
+    EndDate DATE,
+    FOREIGN KEY (DepartmentID) REFERENCES Departments(DepartmentID)
+);
+
+-- Create EmployeeProjects (Junction Table)
+CREATE TABLE EmployeeProjects (
+    EmployeeID INT,
+    ProjectID INT,
+    PRIMARY KEY (EmployeeID, ProjectID),
+    FOREIGN KEY (EmployeeID) REFERENCES Employees(EmployeeID),
+    FOREIGN KEY (ProjectID) REFERENCES Projects(ProjectID)
+);
+
+2)	Insert at least five departments into the Departments table.
+INSERT INTO Departments (DepartmentID, DepartmentName) VALUES
+(1, 'Human Resources'),
+(2, 'Engineering'),
+(3, 'Marketing'),
+(4, 'Finance'),
+(5, 'Research and Development');
+
+
+3)	Insert at least five employees into the Employee's table, distributing them across different departments.
+ ALTER TABLE to Add Salary Column-
+ALTER TABLE Employees
+ADD Salary DECIMAL(10, 2);
+NOW- 
+
+INSERT INTO Employees (EmployeeID, FirstName, LastName, DepartmentID, HireDate, Salary) VALUES
+(101, 'Alice', 'Johnson', 1, '2020-03-15', 60000),
+(102, 'Bob', 'Smith', 2, '2019-06-20', 75000),
+(103, 'Charlie', 'Brown', 3, '2021-01-10', 50000),
+(104, 'Diana', 'Evans', 4, '2018-11-25', 80000),
+(105, 'Ethan', 'Davis', 5, '2022-05-05', 70000);
+
+
+4)	Insert at least five projects into the Projects table, associating them with different departments.
+INSERT INTO Projects (ProjectID, ProjectName, DepartmentID, StartDate, EndDate) VALUES
+(201, 'HR Onboarding System', 1, '2023-01-01', '2023-12-31'),
+(202, 'AI Development', 2, '2023-02-01', '2024-02-01'),
+(203, 'Market Expansion', 3, '2023-03-01', '2023-09-30'),
+(204, 'Budget Optimization', 4, '2023-04-01', '2023-10-01'),
+(205, 'Product Innovation', 5, '2023-05-01', '2024-05-01');
+
+5)	Assign employees to projects using the EmployeeProjects table.
+Make sure each project has at least two employees assigned.
+INSERT INTO EmployeeProjects (EmployeeID, ProjectID) VALUES
+(101, 201), (103, 201),       -- HR Onboarding
+(102, 202), (105, 202),       -- AI Development
+(103, 203), (104, 203),       -- Market Expansion
+(101, 204), (104, 204),       -- Budget Optimization
+(102, 205), (105, 205);       -- Product Innovation
+
+6)	Update the salary of all employees in the HR department by 8%.
+UPDATE Employees
+SET Salary = Salary * 1.08
+WHERE DepartmentID = 1;
+
+7)	Find the average salary of all employees.
+
+SELECT AVG(Salary) AS AverageSalary
+FROM Employees;
+
+8)List all employees along with the projects they are working on.
+
+SELECT 
+    E.EmployeeID,
+    E.FirstName,
+    E.LastName,
+    P.ProjectName
+FROM Employees E
+JOIN EmployeeProjects EP ON E.EmployeeID = EP.EmployeeID
+JOIN Projects P ON EP.ProjectID = P.ProjectID
+ORDER BY E.EmployeeID;
+
+9)	Find the project with the longest duration.
+SELECT ProjectID, ProjectName, DATEDIFF(EndDate, StartDate) AS DurationDays
+FROM Projects
+ORDER BY DurationDays DESC
+LIMIT 1;
+
+10)	Count the number of employees in each department.
+SELECT D.DepartmentName, COUNT(E.EmployeeID) AS EmployeeCount
+FROM Departments D
+LEFT JOIN Employees E ON D.DepartmentID = E.DepartmentID
+GROUP BY D.DepartmentName;
+
+
+11)	Retrieve the names of employees who have worked on more than one project.
+SELECT E.FirstName, E.LastName, COUNT(EP.ProjectID) AS ProjectCount
+FROM Employees E
+JOIN EmployeeProjects EP ON E.EmployeeID = EP.EmployeeID
+GROUP BY E.EmployeeID, E.FirstName, E.LastName
+HAVING COUNT(EP.ProjectID) > 1;
+
+12)	Find the department with the highest total salary expense.
+SELECT D.DepartmentName, SUM(E.Salary) AS TotalSalary
+FROM Departments D
+JOIN Employees E ON D.DepartmentID = E.DepartmentID
+GROUP BY D.DepartmentName
+ORDER BY TotalSalary DESC
+LIMIT 1;
+
+13)	Rank employees within each department based on their salary.
+SELECT 
+    EmployeeID,
+    FirstName,
+    LastName,
+    DepartmentID,
+    Salary,
+    RANK() OVER (PARTITION BY DepartmentID ORDER BY Salary DESC) AS SalaryRank
+FROM Employees;
+
+14)	Update the end date of the project with the shortest duration to
+'2022-12-31'.
+UPDATE Projects
+SET EndDate = '2022-12-31'
+WHERE ProjectID = (
+    SELECT ProjectID
+    FROM Projects
+    ORDER BY DATEDIFF(EndDate, StartDate) ASC
+    LIMIT 1
+);
+
+
+15)	Calculate the total salary expense for each department.
+SELECT D.DepartmentName, SUM(E.Salary) AS TotalSalaryExpense
+FROM Departments D
+JOIN Employees E ON D.DepartmentID = E.DepartmentID
+GROUP BY D.DepartmentName;
+
+16)	Identify employees who have not been assigned to any project.
+SELECT E.EmployeeID, E.FirstName, E.LastName
+FROM Employees E
+LEFT JOIN EmployeeProjects EP ON E.EmployeeID = EP.EmployeeID
+WHERE EP.ProjectID IS NULL;
+
+
+17)	Determine the department with the highest average project duration.
+SELECT D.DepartmentName, AVG(DATEDIFF(P.EndDate, P.StartDate)) AS AvgDuration
+FROM Projects P
+JOIN Departments D ON P.DepartmentID = D.DepartmentID
+GROUP BY D.DepartmentName
+ORDER BY AvgDuration DESC
+LIMIT 1;
+
+18)	Classify employees into salary ranges (e.g., Low, Medium, High) based on their salary.
+Assuming:
+
+Low: < 60,000
+
+Medium: 60,000–79,999
+
+High: ≥ 80,000
+
+SELECT 
+    EmployeeID,
+    FirstName,
+    LastName,
+    Salary,
+    CASE
+        WHEN Salary < 60000 THEN 'Low'
+        WHEN Salary BETWEEN 60000 AND 79999 THEN 'Medium'
+        ELSE 'High'
+    END AS SalaryRange
+FROM Employees;
+
+
+19)	Find the employee with the highest salary.
+
+SELECT EmployeeID, FirstName, LastName, Salary
+FROM Employees
+ORDER BY Salary DESC
+LIMIT 1;
+
+
+20)	Calculate the minimum salary and maximum salary of the particular department.
+
+SELECT 
+    MIN(Salary) AS MinSalary,
+    MAX(Salary) AS MaxSalary
+FROM Employees
+WHERE DepartmentID = 2;
+
+1)	Retrieve all columns from the Employees table.
+SELECT * FROM Employees;
+
+2)	Retrieve employees along with their department names.
+SELECT 
+    E.EmployeeID,
+    E.FirstName,
+    E.LastName,
+    D.DepartmentName
+FROM Employees E
+JOIN Departments D ON E.DepartmentID = D.DepartmentID;
+
+3)	Retrieve employees hired after '2020-01-01'.
+SELECT * 
+FROM Employees
+WHERE HireDate > '2020-01-01';
+
+
+
+4)	Calculate the average salary of employees.
+SELECT AVG(Salary) AS AverageSalary
+FROM Employees;
+
+5)	Count the number of employees in each department.
+SELECT D.DepartmentName, COUNT(E.EmployeeID) AS EmployeeCount
+FROM Departments D
+LEFT JOIN Employees E ON D.DepartmentID = E.DepartmentID
+GROUP BY D.DepartmentName;
+
+6)	Retrieve employees sorted by hire date in descending order.
+SELECT * 
+FROM Employees
+ORDER BY HireDate DESC;
+
+7)	Retrieve employees in the Finance or HR department.
+SELECT E.EmployeeID, E.FirstName, E.LastName, D.DepartmentName
+FROM Employees E
+JOIN Departments D ON E.DepartmentID = D.DepartmentID
+WHERE D.DepartmentName IN ('Finance', 'Human Resources');
+
+
+8)	Retrieve employees whose last name starts with 'S'.
+SELECT * 
+FROM Employees
+WHERE LastName LIKE 'S%';
+
+
+9)	Retrieve employees working on ProjectA.
+
+SELECT E.EmployeeID, E.FirstName, E.LastName, P.ProjectName
+FROM Employees E
+JOIN EmployeeProjects EP ON E.EmployeeID = EP.EmployeeID
+JOIN Projects P ON EP.ProjectID = P.ProjectID
+WHERE P.ProjectName = 'ProjectA';
+
+
+10)	Retrieve employees and their project details.
+SELECT 
+    E.EmployeeID,
+    E.FirstName,
+    E.LastName,
+    P.ProjectName,
+    P.StartDate,
+    P.EndDate
+FROM Employees E
+JOIN EmployeeProjects EP ON E.EmployeeID = EP.EmployeeID
+JOIN Projects P ON EP.ProjectID = P.ProjectID
+ORDER BY E.EmployeeID;
+
+11)	Retrieve all departments and their employees (including those with no employees).
+
+SELECT 
+    D.DepartmentName,
+    E.EmployeeID,
+    E.FirstName,
+    E.LastName
+FROM Departments D
+LEFT JOIN Employees E ON D.DepartmentID = E.DepartmentID
+ORDER BY D.DepartmentName;
+
+12)	Retrieve departments with average salary greater than 70000.
+
+SELECT 
+    D.DepartmentName,
+    AVG(E.Salary) AS AverageSalary
+FROM Departments D
+JOIN Employees E ON D.DepartmentID = E.DepartmentID
+GROUP BY D.DepartmentName
+HAVING AVG(E.Salary) > 70000;
+
+
+13)	Increase the salary of all employees in the IT department by 10%.
+UPDATE Employees
+SET Salary = Salary * 1.10
+WHERE DepartmentID = (
+    SELECT DepartmentID
+    FROM Departments
+    WHERE DepartmentName = 'Engineering'
+);
+
+
+14)	Remove employees hired before '2019-01-01'.
+DELETE FROM Employees
+WHERE HireDate < '2019-01-01';
+
+
+15)	Find the employee with the highest salary.
+
+SELECT *
+FROM Employees
+ORDER BY Salary DESC
+LIMIT 1;
+
+16)	Classify employees into salary ranges.
+
+Low: < 60,000
+
+Medium: 60,000–79,999
+
+High: ≥ 80,000
+
+SELECT 
+    EmployeeID,
+    FirstName,
+    LastName,
+    Salary,
+    CASE
+        WHEN Salary < 60000 THEN 'Low'
+        WHEN Salary BETWEEN 60000 AND 79999 THEN 'Medium'
+        ELSE 'High'
+    END AS SalaryRange
+FROM Employees;
+
+
+
+
+
+
+
